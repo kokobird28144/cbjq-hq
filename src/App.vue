@@ -68,6 +68,7 @@
     <div class="chart-container">
       <line-chart :data="chartData" :options="chartOptions" />
     </div>
+    Github
 </template>
 
 <script>
