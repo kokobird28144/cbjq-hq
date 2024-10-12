@@ -1,0 +1,41 @@
+name: Build and Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the repository
+      - name: Checkout the code
+        uses: actions/checkout@v3
+
+      # Step 2: Set up Node.js environment
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+
+      # Step 3: Install dependencies
+      - name: Install dependencies
+        run: npm install
+
+      # Step 4: Build the project
+      - name: Run build script
+        run: npm run build
+
+      # Step 5: Deploy to GitHub Pages (Push to gh-pages branch)
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          # 如果使用其他分支（例如 gh-pages），可以在这里指定
+          publish_branch: gh-pages
+
+      # Step 6: Jekyll build (GitHub Pages 默认支持 Jekyll，无需显式配置)
+      # GitHub Pages 会自动检测到 gh-pages 分支，并使用 Jekyll 构建网站
