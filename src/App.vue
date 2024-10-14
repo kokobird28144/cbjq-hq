@@ -1,38 +1,49 @@
 <!-- App.vue -->
 <template>
   <div id="app">
-    <h1>尘白禁区后勤词条折算总分期望计算器</h1>
+    <h1>尘白禁区后勤词条折算总分刷取计算器</h1>
     <hr />
+
     <!-- 权重输入框区域，用于用户输入 9 个属性的权重 -->
-    <h2>调整词条权重(0-1)</h2>
+    <!-- <h2>调整词条权重(0-1)</h2> -->
     <div class="input-grid">
-    <div v-for="(weight, index) in weights" :key="index">
-      <label :for="'weight' + (index + 1)"> {{ weightsName[index] }}:</label>
-      <input :id="'weight' + (index + 1)" type="number" v-model.number="weights[index]" :step="weightsStep[index]" min="0" max="1" />
+      <div v-for="(weight, index) in weights" :key="index">
+        <label :for="'weight' + (index + 1)">{{ standardValues[index] }}{{ weightsName[index] }}=</label>
+        <input :id="'weight' + (index + 1)" type="number" v-model.number="weights[index]" :step="weightsStep[index]"
+          min="0" style="width: 50px;" />
+        <label>分</label>
+      </div>
     </div>
-  </div>
 
     <!-- 按钮：计算总分并排序 -->
     <div class="button-grid">
-    <button @click="calculateAndSort">计算总分并排序</button>
-    <button @click="clearWeight">重置权重</button>
-    <select @change="loadPreset" v-model="selectedPreset">
+      <button @click="calculateAndSort">计算总分并排序</button>
+      <button @click="clearWeight">重置分数</button>
+      <button @click="toggleDescription">
+        {{ showDescription ? '隐藏说明' : '显示说明' }}
+      </button>
+      <select @change="loadPreset" v-model="selectedPreset">
         <option value="" disabled>选择预设</option>
         <option v-for="(preset, name) in presetOptions" :key="name" :value="name">
           {{ name }}
         </option>
       </select>
-    <label>目标成功概率</label>
-    <input type="number" v-model.number="ptarget" :step="0.1" min="0" max="1" />  
+      <div><label>目标成功概率 </label>
+        <input type="number" v-model.number="ptarget" :step="0.1" min="0" max="1" style="width: 50px;" />
+      </div>
     </div>
-    <hr />
+    <div v-show="showDescription">
     <ul>
-      <li>假定词条种类和档位的抽取是等概率完全随机的，不存在保底等特殊机制。</li>
-      <li>预设配置仅供参考。实际战斗环境不同或关注的角色不同，折算系数可能发生变化。</li>
-      <li>“单次提升概率”表示获得1个后勤时其属性在该档位及以上的概率。</li>  
-      <li>“期望体力”根据1个后勤100体力，乘以期望次数 (1/p)得到。</li>
-      <li>“目标成功概率”表示希望有多少概率能够达成目标，根据 log(1-p成功)/log(1-p) 计算得到表中最后一列。</li>
+      <li>假定词条种类和档位的抽取是等概率完全随机的，不存在保底等特殊机制。不考虑第三词条。</li>
+      <li>预设配置仅供参考。实际战斗环境不同或关注的角色不同，折算分数可能发生变化，可按实际需求调整。</li>
+      <li>“出货率”表示获得1个后勤时其属性在<b>该档位及以上</b>的概率。</li>
+      <li>“出货期望体力”根据<b>获取1个限定后勤100体力</b>，乘以出货期望次数 (1/p)得到。</li>
+      <li>“目标成功概率”表示<b>希望有多少概率能够达成目标</b>，根据 log(1-p成功)/log(1-p) 计算概率得到表中最后一列。</li>
+      <li>由于官方表示后勤刷取将要优化，所以暂时不考虑进一步开发更多功能了。</li>
     </ul>
+  </div>
+    <hr />
+
 
     <!-- 展示排序结果 -->
     <table>
@@ -40,10 +51,10 @@
         <tr>
           <th>排位</th>
           <th>属性</th>
-          <th>折算分</th>
-          <th>单次提升概率</th>
-          <th>期望体力</th>
-          <th>目标概率所需体力</th>
+          <th>折算总分</th>
+          <th>出货率</th>
+          <th>出货期望体力</th>
+          <th>达到目标概率所需体力</th>
         </tr>
       </thead>
       <tbody>
@@ -53,22 +64,27 @@
           <td>{{ item.totalScore.toFixed(2) }}</td>
           <td>{{ item.prob.toFixed(3) }}</td>
           <td>{{ (item.expectres).toFixed(0) }}</td>
-          <td>{{ (100*Math.log(1-this.ptarget)/Math.log(1-item.prob)).toFixed(0) }}</td>
+          <td>{{ item.successres.toFixed(0) }}</td>
         </tr>
       </tbody>
     </table>
-  </div>
-    <!-- 分页控制按钮 -->
-    <div class="pagination">
+  
+  <!-- 分页控制按钮 -->
+  <div class="pagination">
     <button @click="prevPage" :disabled="currentPage === 1">上一页</button>
     <span>当前页: {{ currentPage }} / {{ totalPages }}</span>
     <button @click="nextPage" :disabled="currentPage === totalPages">下一页</button>
   </div>
-    <!-- 添加 Chart 组件，传入 chartData 和 options -->
-    <div class="chart-container">
-      <line-chart :data="chartData" :options="chartOptions" />
-    </div>
-    Github
+  <!-- 添加 Chart 组件，传入 chartData 和 options -->
+  <div class="chart-container">
+    <line-chart :data="chartData" :options="chartOptions" />
+  </div>
+</div>
+  <footer>
+    <a class="Github" href="https://github.com/kokobird28144/cbjq-hq" target="_blank" title="GitHub Repository">
+      Github
+    </a>
+  </footer>
 </template>
 
 <script>
@@ -87,15 +103,16 @@ export default {
       standardValues: [10, 10, 10, 106, 5.3, 10.6, 19.3, 14.1, 14.1], // 每个属性的标准值
       weights: Array(9).fill(0), // 用户输入的 9 个权重，初始值为 0
       weightsUsed: Array(9).fill(0),
-      weightsStep: ['0.1', '0.1', '0.1', '0.01', '0.1', '0.1', '0.1','0.1','0.1'],
-      weightsName: ['攻击力%', '生命值%', '防御力%', '同调', '暴击%', '暴伤%','技能急速','常规能量%', '爆发能量%'],
-      ptarget: 0.5,
+      weightsStep: ['1', '1', '1', '1', '1', '1', '1', '1', '1'],
+      weightsName: ['攻击力%', '生命值%', '防御力%', '同调', '暴击%', '暴伤%', '技能急速', '常规能量%', '爆发能量%'],
+      ptarget: 0.7,
       objects: [], // 存储生成的 900 个对象
       displayedObjects: [], // 最终显示的对象列表（前 40 位）
       presetOptions: presetsData, // 存储预设选项（从 JSON 文件中读取）
       selectedPreset: "", // 当前选中的预设名称
       currentPage: 1, // 当前页码
-      pageSize: 20, // 每页显示的对象数量（默认 10）
+      pageSize: 20, // 每页显示的象数量（默认 10）
+      showDescription: true,
       chartOptions: {
         responsive: true, // 响应式
         maintainAspectRatio: false, // 保持宽高比
@@ -106,7 +123,7 @@ export default {
             max: 10000,
             title: {
               display: true,
-              text: '期望体力' // X轴标题
+              text: '体力' // X轴标题
             }
           },
           y: {
@@ -146,11 +163,20 @@ export default {
         labels: [], // X轴标签
         datasets: [
           {
-            label: '最低折算分对应投入体力期望', // 数据集名称
+            label: '折算总分-出货期望体力', // 数据集名称
             backgroundColor: '#42A5F5', // 背景色
             borderColor: '#1E88E5', // 边框色
             data: this.displayedObjects.map(item => ({
               x: item.expectres, // 将 expectres 作为横坐标
+              y: item.totalScore // 将 totalScore 作为纵坐标
+            })), // Y轴数据
+          },
+          {
+            label: '折算总分-达到目标概率所需体力', // 数据集名称
+            backgroundColor: '#F5AB00', // 背景色
+            borderColor: '#c4860d', // 边框色
+            data: this.displayedObjects.map(item => ({
+              x: item.successres, // 将 expectres 作为横坐标
               y: item.totalScore // 将 totalScore 作为纵坐标
             })), // Y轴数据
           }
@@ -184,10 +210,12 @@ export default {
               attr7: 0,
               attr8: 0,
               attr9: 0,
+              attrscore: [0, 0, 0, 0, 0, 0, 0, 0, 0],
               totalScore: 0, // 总分初始化为 0
               rank: 0, // 排名初始化为 0
               prob: 0,
               expectres: 0,
+              successres: 0,
             };
 
             // 设置选定属性的值（根据标准值和倍数）
@@ -228,11 +256,13 @@ export default {
       return result;
     },
 
-    clearWeight(){
+    clearWeight() {
       for (let i = 1; i <= 9; i++) {
-          this.weights[i - 1] = 0;
-        }
+        this.weights[i - 1] = 0;
+      }
       this.displayedObjects = [];
+      this.currentPage = 1;
+      this.selectedPreset = "";
     },
 
     // 加载选中的预设权重
@@ -254,7 +284,8 @@ export default {
           const attrValue = obj[`attr${i}`]; // 属性值
           const weight = this.weights[i - 1]; // 对应的权重
           this.weightsUsed[i - 1] = weight;
-          obj.totalScore += attrValue * weight; // 计算总分
+          obj.attrscore[i - 1] = attrValue * weight / this.standardValues[i - 1];
+          obj.totalScore += obj.attrscore[i - 1];
         }
       });
 
@@ -262,32 +293,48 @@ export default {
       this.objects.sort((a, b) => b.totalScore - a.totalScore);
 
       let rank = 1;
-      let lastScore = null;
-      let cumprob = 1/900;
-
+      let lastScore = -1;
+      let cumprob = 1 / 900;
+      let sameScoreIndex = [];
       // 记录排名，并处理总分相同的情况
-      this.objects.forEach((obj) => {
+      this.objects.forEach((obj, index, arr) => {
         obj.prob = cumprob;
-        obj.expectres = 100/cumprob;
-        cumprob += 1/900;
-        if (obj.totalScore !== lastScore) {
+        obj.expectres = 100 / cumprob;
+        obj.successres = (100 * Math.log(1 - this.ptarget) / Math.log(1 - cumprob))
+        if (Math.abs(obj.totalScore - lastScore) > 0.000001) {
           obj.rank = rank; // 更新排名
           rank++; // 增加排名
           lastScore = obj.totalScore; // 更新最后的总分
+          sameScoreIndex.forEach((obj1) => {
+            arr[obj1].prob = arr[index - 1].prob;
+            arr[obj1].expectres = arr[index - 1].expectres;
+            arr[obj1].successres = arr[index - 1].successres;
+          })
+          sameScoreIndex = [index];
         } else {
-          // 如果总分相同，保持 rank 不变，但排名 index + 1
+          // 如果总分相同，保持 rank 不变
           obj.rank = rank - 1;
+          sameScoreIndex.push(index)
+        }
+        cumprob += 1 / 900;
+      });
+
+      // 筛选显示的对象
+      this.displayedObjects = this.objects.filter((obj, index, arr) => {
+        if (index === 899) {
+          return true;
+        }
+        if (obj.totalScore !== arr[index + 1].totalScore) {
+          return true;
+        }
+        if (JSON.stringify(obj.attrscore) === JSON.stringify(arr[index + 1].attrscore)) {
+          return false;
+        } else {
+          return true;
         }
       });
 
-      // 筛选前 40 位，且去除总分相同的对象
-      this.displayedObjects = this.objects.filter((obj, index, arr) => {
-        if (index === 899 || obj.totalScore !== arr[index + 1].totalScore) {
-          return obj.rank <= 90; // 仅保留前 40 个排位的对象
-        }
-        return false;
-      });
-      
+      this.currentPage = 1;
     },
 
     // 过滤对象中属性值和对应权重均不为 0 的属性
@@ -297,30 +344,32 @@ export default {
         const attrValue = item[`attr${i}`];
         const weight = this.weightsUsed[i - 1];
         if (attrValue !== 0 && weight !== 0) {
-          filteredAttributes.push(`${this.weightsName[i - 1]}:${attrValue.toFixed(1)}`);
+          filteredAttributes.push(`${attrValue.toFixed(1)}${this.weightsName[i - 1]}`);
         }
       }
       if (filteredAttributes.length < 2) {
-        filteredAttributes.push('其他');
+        filteredAttributes.push('无效词条');
       }
       return filteredAttributes;
     },
-  // 切换到上一页
-  prevPage() {
-    if (this.currentPage > 1) {
-      this.currentPage--;
-    }
-  },
+    // 切换到上一页
+    prevPage() {
+      if (this.currentPage > 1) {
+        this.currentPage--;
+      }
+    },
 
-  // 切换到下一页
-  nextPage() {
-    if (this.currentPage < this.totalPages) {
-      this.currentPage++;
-    }
-  },
-   // 初始化图表数据的方法
-   // 从 displayedObjects 中提取 expectres 和 totalScore 数据
+    // 切换到下一页
+    nextPage() {
+      if (this.currentPage < this.totalPages) {
+        this.currentPage++;
+      }
+    },
+    toggleDescription() {
+      this.showDescription = !this.showDescription; // 切换显示状态
+    },
   }
+
 };
 </script>
 
@@ -328,9 +377,12 @@ export default {
 /* 样式部分，可根据实际需求调整 */
 #app {
   display: flex;
-  align-items: center;     /* 垂直居中 */
-  min-height: 100vh;       /* 占满整个视口高度 */
-  flex-direction: column;  /* 使内容按列布局 */
+  align-items: center;
+  /* 垂直居中 */
+  min-height: 100vh;
+  /* 占满整个视口高度 */
+  flex-direction: column;
+  /* 使内容按列布局 */
 }
 
 button {
@@ -343,7 +395,8 @@ table {
   margin-top: 20px;
 }
 
-th, td {
+th,
+td {
   border: 1px solid #ddd;
   padding: 8px;
   text-align: center;
@@ -353,30 +406,39 @@ th {
   background-color: #f4f4f4;
   font-weight: bold;
 }
-ul {
-  margin-top: 20px;
-}
 
 hr {
   border: 0;
-  width: 100%;                /* 去除默认边框样式 */
-  height: 1px;              /* 设置分割线的高度 */
-  background-color: black;   /* 设置分割线颜色 */
-  margin: 0px 0;           /* 设置分割线的上下边距 */
+  width: 100%;
+  /* 去除默认边框样式 */
+  height: 1px;
+  /* 设置分割线的高度 */
+  background-color: black;
+  /* 设置分割线颜色 */
+  margin: 20px 0px;
+  /* 设置分割线的上下边距 */
 }
 
 /* 样式部分：定义 .input-grid 的布局 */
 .input-grid {
-  display: grid;              /* 使用 CSS Grid 布局 */
-  grid-template-columns: repeat(3, 1fr);  /* 定义 3 列布局，每列平分宽度 */
-  gap: 10px;                  /* 设置网格间距 */
+  display: grid;
+  /* 使用 CSS Grid 布局 */
+  grid-template-columns: repeat(3, 1fr);
+  /* 定义 3 列布局，每列平分宽度 */
+  gap: 10px;
+  /* 设置网格间距 */
 }
 
 .button-grid {
-  display: grid;              /* 使用 CSS Grid 布局 */
-  grid-template-columns: repeat(4, 1fr);  /* 定义 3 列布局，每列平分宽度 */
-  gap: 10px;                  /* 设置网格间距 */
+  margin-top: 20px;
+  display: grid;
+  /* 使用 CSS Grid 布局 */
+  grid-template-columns: repeat(3, 1fr);
+  /* 定义 3 列布局，每列平分宽度 */
+  gap: 10px;
+  /* 设置网格间距 */
 }
+
 /* 样式部分：分页按钮样式 */
 .pagination {
   display: flex;
@@ -396,14 +458,20 @@ hr {
   margin: 0 10px;
 }
 
-.line-chart {
-  width: 800px; /* 图表宽度 */
-  height: 400px; /* 图表高度 */
-}
 .chart-container {
+  width: 100%;
+  height: 30vh;
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 50vh; /* 将父容器高度设置为 100% 视口高度 */
+}
+
+.footer {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  text-align: center;
+  background-color: #f9f9f9;
+  padding: 10px 0;
 }
 </style>
